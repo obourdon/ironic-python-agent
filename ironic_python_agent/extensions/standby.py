@@ -470,15 +470,18 @@ class StandbyExtension(base.BaseAgentExtension):
         # the configdrive creation is taken care by ironic-lib's
         # work_on_disk().
         if image_info.get('image_type') != 'partition':
+            # Will use dummy value of 'local' for 'node_uuid',
+            # if it is not available. This is to handle scenario
+            # wherein new IPA is being used with older version
+            # of Ironic that did not pass 'node_uuid' in 'image_info'
+            node_uuid = image_info.get('node_uuid', 'local')
             if configdrive is not None:
-                # Will use dummy value of 'local' for 'node_uuid',
-                # if it is not available. This is to handle scenario
-                # wherein new IPA is being used with older version
-                # of Ironic that did not pass 'node_uuid' in 'image_info'
-                node_uuid = image_info.get('node_uuid', 'local')
                 disk_utils.create_config_drive_partition(node_uuid,
                                                          device,
                                                          configdrive)
+            else:
+                disk_utils.fix_gpt_partition(node_uuid,
+                                             device)
         msg = 'image ({}) written to device {} '
         result_msg = _message_format(msg, image_info, device,
                                      self.partition_uuids)
